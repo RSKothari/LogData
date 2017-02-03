@@ -154,6 +154,12 @@ string SceneImageLoc;
 string pathToGazeText;
 string pathToGaze;
 
+// Queue data structures: Brendan
+Queue_Eye   LeftEyeQueue;
+Queue_Eye   RightEyeQueue;
+Queue_Scene SceneQueue;
+
+
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
 /* **************************************************************************************** */
@@ -220,6 +226,12 @@ int main (int argc, char ** argv) {
 	// Create file for writing Gaze Data
 	GazeFile.open(pathToGazeText);
 	GazeFile << "EyeFrameNumber,SceneFrameNumber,serverTime,BporX,BporY,Year,Month,Day,Hour,Minute,Second,Millisecond\n";
+
+	// Create queue's for scene and eye images
+	LeftEyeQueue    = createEyeQueue();
+	RightEyeQueue   = createEyeQueue();
+	SceneQueue      = createSceneQueue();
+
 	WaitForUserInteraction ();
 
 	printf ("Cleaning up...\n");
@@ -229,6 +241,103 @@ int main (int argc, char ** argv) {
 
 	return 0;
 }
+
+/* **************************************************************************************** */
+
+/**
+ * Create and initiate a scene queue
+ */
+Queue_Scene createSceneQueue () {
+    Queue_Scene queue;
+    queue.size       = 0;
+    queue.head       = NULL;
+    queue.tail       = NULL;
+    queue.push_Scene = &push_Scene;
+    queue.pop_Scene  = &pop_Scene;
+    return queue;
+}
+
+/**
+ * Create and initiate an eye queue
+ */
+Queue_Eye createEyeQueue () {
+    Queue_Eye queue;
+    queue.size       = 0;
+    queue.head       = NULL;
+    queue.tail       = NULL;
+    queue.push_Eye   = &push_Eye;
+    queue.pop_Eye    = &pop_Eye;
+    return queue;
+}
+
+/**
+ * Push an item into scene queue, if this is the first item,
+ * both queue->head and queue->tail will point to it,
+ * otherwise the oldtail->next and tail will point to it.
+ */
+void push_Scene (Queue_Scene* queue, iViewDataStreamSceneImage* img) {
+    // Create a new node
+    Node_Scene* n = (Node_Scene*) malloc (sizeof(Node_Scene));
+    n->img        = img;
+    n->next       = NULL;
+
+    if (queue->head == NULL) { // no head
+        queue->head = n;
+    } else{
+        queue->tail->next = n;
+    }
+    queue->tail = n;
+    queue->size++;
+}
+/**
+ * Return and remove the first item from scene queue
+ */
+iViewDataStreamSceneImage* pop_Scene (Queue_Scene* queue) {
+    // get the first item
+    Node_Scene* head = queue->head;
+    iViewDataStreamSceneImage* img = head->img;
+    // move head pointer to next node, decrease size
+    queue->head = head->next;
+    queue->size--;
+    // free the memory of original head
+    free(head);
+    return img;
+}
+
+/**
+ * Push an item into scene queue, if this is the first item,
+ * both queue->head and queue->tail will point to it,
+ * otherwise the oldtail->next and tail will point to it.
+ */
+void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
+    // Create a new node
+    Node_Eye* n = (Node_Eye*) malloc (sizeof(Node_Eye));
+    n->img        = img;
+    n->next       = NULL;
+
+    if (queue->head == NULL) { // no head
+        queue->head = n;
+    } else{
+        queue->tail->next = n;
+    }
+    queue->tail = n;
+    queue->size++;
+}
+/**
+ * Return and remove the first item from scene queue
+ */
+iViewDataStreamEyeImage* pop_Eye (Queue_Scene* queue) {
+    // get the first item
+    Node_Scene* head = queue->head;
+    iViewDataStreamSceneImage* img = head->img;
+    // move head pointer to next node, decrease size
+    queue->head = head->next;
+    queue->size--;
+    // free the memory of original head
+    free(head);
+    return img;
+}
+
 
 /* **************************************************************************************** */
 
@@ -1230,6 +1339,8 @@ iViewRC Cleanup () {
  */
 void WaitForUserInteraction () {
 
+	//start threads for each queue
+
 	// Wait for data to arrive via callback
 	printf ("Press 'ESC' to exit.\n");
 
@@ -1246,6 +1357,8 @@ void WaitForUserInteraction () {
 		// key pressed!
 		key = getch();
 	}
+
+	//end threads for each queue 
 
 	return;
 }

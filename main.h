@@ -27,6 +27,11 @@
 // OF OR IN CONNECTION WITH THE  SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+// Code modified by Brendan John (bmj8778@rit.edu) & Rakshit Kothari (rsk3900@rit.edu)
+// to include queue data structures and to handle data recieved wirelessly through router.
+// 
+// Credits: C Queue implementation credited to Bai Ben (http://ben-bai.blogspot.com/2012/04/simple-queue-data-structure-in-ansi-c.html) 
+//
 // -----------------------------------------------------------------------
 #pragma once
 
@@ -45,27 +50,84 @@ extern char gCalibrationPointsToDo;
 extern unsigned int gTimeOfSetupCalibMsec;
 extern unsigned int gSetupCalibCooldownMsec;
 
-//struct for generic Queue, will be used for storing pointers to images (L_eye, R_eye, Scene)
-typedef struct Node
-{
-  void *data;
-  struct Node *next;
-}node;
+/**
+ * The Node struct for use with eye images,
+ * contains pointer to image data and then points to the next node.
+ */
+typedef struct Node_Eye {
+    iViewDataStreamEyeImage* img;
+    struct Node_Eye* next;
+} Node_Eye;
+/**
+ * The Queue_Eye struct, contains the pointers that
+ * point to first node and last node, and the size of the Queue.
+ */
+typedef struct Queue_Eye {
+    Node_Eye* head;
+    Node_Eye* tail;
+	int size;
+    void (*push_Eye) (struct Queue_Eye*, iViewDataStreamEyeImage*); // add item to tail
+    // get item from head and remove it from queue
+    iViewDataStreamEyeImage* (*pop_Eye) (struct Queue_Eye*);
+} Queue_Eye;
 
-typedef struct QueueList
-{
-    int sizeOfQueue;
-    size_t memSize;
-    node *head;
-    node *tail;
-}Queue;
+/**
+ * The Node struct for use with scene images,
+ * contains pointer to image data and then points to the next node.
+ */
+typedef struct Node_Scene {
+    iViewDataStreamSceneImage* img;
+    struct Node_Scene* next;
+} Node_Scene;
+/**
+ * The Queue_Scene struct, contains the pointers that
+ * point to first node and last node, and the size of the Queue.
+ */
+typedef struct Queue_Scene {
+    Node_Scene* head;
+    Node_Scene* tail;
+	int size;
+    void (*push_Scene) (struct Queue_Scene*, iViewDataStreamSceneImage*); // add item to tail
+    // get item from head and remove it from queue
+    iViewDataStreamSceneImage* (*pop_Scene) (struct Queue_Scene*);
+} Queue_Scene;
 
-void queueInit(Queue *q, size_t memSize);
-int enqueue(Queue *, const void *);
-void dequeue(Queue *, void *);
-void queuePeek(Queue *, void *);
-void clearQueue(Queue *);
-int getQueueSize(Queue *);
+/**
+ * Push an item into eye queue, if this is the first item,
+ * both queue->head and queue->tail will point to it,
+ * otherwise the oldtail->next and tail will point to it.
+ */
+void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img);
+/**
+ * Return and remove the first item.
+ */
+iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue);
+
+/**
+ * Function that frees memory used for queue
+ */
+void destroy_EyeQueue(Queue_Eye* queue);
+
+/**
+ * Create and initiate a Queue_Eye
+ */
+Queue_Eye createEyeQueue ();
+
+/**
+ * Push an item into scene queue, if this is the first item,
+ * both queue->head and queue->tail will point to it,
+ * otherwise the oldtail->next and tail will point to it.
+ */
+void push_Scene (Queue_Scene* queue, iViewDataStreamSceneImage* img);
+/**
+ * Return and remove the first item.
+ */
+iViewDataStreamSceneImage* pop_Scene (Queue_Scene* queue);
+
+/**
+ * Create and initiate a Queue_Scene
+ */
+Queue_Scene createSceneQueue ();
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
