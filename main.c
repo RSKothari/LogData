@@ -42,7 +42,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-
+#include <direct.h>
+#include <stdlib.h>
 #include <iViewNG-Core.h>
 #include <iViewNG-Calibration.h>
 #include <iViewNG-Connection.h>
@@ -151,6 +152,7 @@ string RightEyeImageLoc;
 string LeftEyeImageLoc;
 string SceneImageLoc;
 string pathToGazeText;
+string pathToGaze;
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
@@ -169,12 +171,38 @@ int main (int argc, char ** argv) {
 	RightEyeImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\RightEyeImages";
 	LeftEyeImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\LeftEyeImages";
 	SceneImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\SceneImages";
-	pathToGazeText = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\GazeData\\Gaze_Data.txt";
+	pathToGaze = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\GazeData";
+	pathToGazeText = pathToGaze	+ "\\Gaze_Data.txt";
+
+	if (_mkdir(RightEyeImageLoc.c_str()) == 0)
+	{
+		_mkdir(LeftEyeImageLoc.c_str());
+		_mkdir(SceneImageLoc.c_str());
+		_mkdir(pathToGaze.c_str());
+		printf("Directories successfully created");
+	}
+	else 
+	{
+		printf("Directories already existed. Deleting.");
+		_rmdir(RightEyeImageLoc.c_str());
+		_rmdir(LeftEyeImageLoc.c_str());
+		_rmdir(SceneImageLoc.c_str());
+		_rmdir(pathToGaze.c_str());
+
+		_mkdir(RightEyeImageLoc.c_str());
+		_mkdir(LeftEyeImageLoc.c_str());
+		_mkdir(SceneImageLoc.c_str());
+		_mkdir(pathToGaze.c_str());
+
+		printf("Directories successfully created");
+	}
 
 	cout << RightEyeImageLoc << "\n";
 	cout << LeftEyeImageLoc << "\n";
 	cout << SceneImageLoc << "\n";
 	cout << pathToGazeText << "\n";
+
+
 
 	// Compression parameters	
     compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);

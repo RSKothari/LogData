@@ -183,7 +183,7 @@ void writeImage (iViewImage *image, int fr_num, string imLoc, vector<int> compre
 	
 	if (NULL == image)
 		return;
-	
+
 	string tempStr = imLoc + "\\" + to_string( static_cast<long double>(fr_num)) + ".jpg";
 
 	cvSaveImage(tempStr.c_str(), image);
