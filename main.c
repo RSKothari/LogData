@@ -326,10 +326,10 @@ void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
 /**
  * Return and remove the first item from scene queue
  */
-iViewDataStreamEyeImage* pop_Eye (Queue_Scene* queue) {
+iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue) {
     // get the first item
-    Node_Scene* head = queue->head;
-    iViewDataStreamSceneImage* img = head->img;
+    Node_Eye* head = queue->head;
+    iViewDataStreamEyeImage* img = head->img;
     // move head pointer to next node, decrease size
     queue->head = head->next;
     queue->size--;
