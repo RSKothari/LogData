@@ -104,16 +104,6 @@ void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img);
 iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue);
 
 /**
- * Function that frees memory used for queue
- */
-void destroy_EyeQueue(Queue_Eye* queue);
-
-/**
- * Create and initiate a Queue_Eye
- */
-Queue_Eye createEyeQueue ();
-
-/**
  * Push an item into scene queue, if this is the first item,
  * both queue->head and queue->tail will point to it,
  * otherwise the oldtail->next and tail will point to it.
@@ -125,9 +115,24 @@ void push_Scene (Queue_Scene* queue, iViewDataStreamSceneImage* img);
 iViewDataStreamSceneImage* pop_Scene (Queue_Scene* queue);
 
 /**
+* Create and initiate a Queue_Eye
+*/
+Queue_Eye createEyeQueue();
+
+/**
  * Create and initiate a Queue_Scene
  */
 Queue_Scene createSceneQueue ();
+
+/**
+* Function that frees memory used for eye queue
+*/
+void destroy_EyeQueue(Queue_Eye* queue);
+
+/**
+* Function that frees memory used for eye queue
+*/
+void destroy_SceneQueue(Queue_Scene* queue);
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
