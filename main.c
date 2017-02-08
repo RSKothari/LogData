@@ -44,7 +44,6 @@
 #include <vector>
 #include <direct.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <iViewNG-Core.h>
 #include <iViewNG-Calibration.h>
 #include <iViewNG-Connection.h>
@@ -160,11 +159,6 @@ Queue_Eye   LeftEyeQueue;
 Queue_Eye   RightEyeQueue;
 Queue_Scene SceneQueue;
 
-// Mutex objects, for locking of image queue
-pthread_mutex_t mutexEyeL  = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexEyeR  = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexScene = PTHREAD_MUTEX_INITIALIZER;
-
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
@@ -240,11 +234,6 @@ int main (int argc, char ** argv) {
 
 	WaitForUserInteraction ();
 
-	// destroy the queue's
-	LeftEyeQueue.destroy_Eye(&LeftEyeQueue);
-	RightEyeQueue.destroy_Eye(&RightEyeQueue);
-	SceneQueue.destroy_Scene(&SceneQueue);
-
 	printf ("Cleaning up...\n");
 
 	Cleanup ();
@@ -260,12 +249,11 @@ int main (int argc, char ** argv) {
  */
 Queue_Scene createSceneQueue () {
     Queue_Scene queue;
-    queue.size          = 0;
-    queue.head          = NULL;
-    queue.tail          = NULL;
-    queue.push_Scene    = &push_Scene;
-    queue.pop_Scene     = &pop_Scene;
-	queue.destroy_Scene = &destroy_SceneQueue;
+    queue.size       = 0;
+    queue.head       = NULL;
+    queue.tail       = NULL;
+    queue.push_Scene = &push_Scene;
+    queue.pop_Scene  = &pop_Scene;
     return queue;
 }
 
@@ -274,13 +262,12 @@ Queue_Scene createSceneQueue () {
  */
 Queue_Eye createEyeQueue () {
     Queue_Eye queue;
-    queue.size        = 0;
-    queue.head        = NULL;
-    queue.tail        = NULL;
-    queue.push_Eye    = &push_Eye;
-    queue.pop_Eye     = &pop_Eye;
-	queue.destroy_Eye = &destroy_EyeQueue;
-	return queue;
+    queue.size       = 0;
+    queue.head       = NULL;
+    queue.tail       = NULL;
+    queue.push_Eye   = &push_Eye;
+    queue.pop_Eye    = &pop_Eye;
+    return queue;
 }
 
 /**
@@ -339,10 +326,10 @@ void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
 /**
  * Return and remove the first item from scene queue
  */
-iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue) {
+iViewDataStreamEyeImage* pop_Eye (Queue_Scene* queue) {
     // get the first item
-    Node_Eye* head = queue->head;
-    iViewDataStreamEyeImage* img = head->img;
+    Node_Scene* head = queue->head;
+    iViewDataStreamSceneImage* img = head->img;
     // move head pointer to next node, decrease size
     queue->head = head->next;
     queue->size--;
@@ -351,47 +338,6 @@ iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue) {
     return img;
 }
 
-void destroy_EyeQueue(Queue_Eye* queue) {
-	iViewDataStreamEyeImage* temp;
-	
-	//destroy by popping until empty
-	while (queue->size > 0) {
-		temp = queue->pop_Eye(queue);
-		free(temp);
-	}
-}
-
-void destroy_SceneQueue(Queue_Scene* queue) {
-	iViewDataStreamSceneImage* temp;
-
-	//destroy by popping until empty
-	while (queue->size > 0) {
-		temp = queue->pop_Scene(queue);
-		free(temp);
-	}
-}
-
-void * worker_EyeThreadL(void * param) {
-	iViewDataStreamEyeImage* imgToWrite;
-	// first grab lock, check size. If has element then pop it and save off
-	pthread_mutex_lock(&mutexEyeL);
-	if (LeftEyeQueue.size > 0) {
-		imgToWrite = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
-		
-	}
-	pthread_mutex_unlock(&mutexEyeL);
-	writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
-
-	//optionally could add small time (ms) sleep here for worker thread
-}
-
-void * worker_EyeThreadR(void * param) {
-
-}
-
-void * worker_SceneThread(void * param) {
-
-}
 
 /* **************************************************************************************** */
 
@@ -1393,9 +1339,7 @@ iViewRC Cleanup () {
  */
 void WaitForUserInteraction () {
 
-	//TODO: start threads for each queue
-	//TODO: make imgWrite functions for each type of queue, confirm they work. 
-	//TODO: Set up mutex locking and add threading compile flag to build
+	//start threads for each queue
 
 	// Wait for data to arrive via callback
 	printf ("Press 'ESC' to exit.\n");
@@ -1414,7 +1358,7 @@ void WaitForUserInteraction () {
 		key = getch();
 	}
 
-	//TODO: end threads for each queue 
+	//end threads for each queue 
 
 	return;
 }
