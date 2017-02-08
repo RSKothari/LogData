@@ -32,6 +32,8 @@
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+//to deal with compile error from pthreads (Win 32 version)
+#define HAVE_STRUCT_TIMESPEC
 
 #include <opencv.hpp>
 
@@ -160,11 +162,14 @@ Queue_Eye   LeftEyeQueue;
 Queue_Eye   RightEyeQueue;
 Queue_Scene SceneQueue;
 
-// Mutex objects, for locking of image queue
+// Mutex objects, for locking of image queue: Brendan
 pthread_mutex_t mutexEyeL  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexEyeR  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexScene = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexFlag = PTHREAD_MUTEX_INITIALIZER;
 
+// Int to work as data collection flag. 1 if data is being collected. Set to 0 when done.
+int studyFlag;
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
@@ -237,6 +242,7 @@ int main (int argc, char ** argv) {
 	LeftEyeQueue    = createEyeQueue();
 	RightEyeQueue   = createEyeQueue();
 	SceneQueue      = createSceneQueue();
+	studyFlag       = 1;
 
 	WaitForUserInteraction ();
 
@@ -371,7 +377,7 @@ void destroy_SceneQueue(Queue_Scene* queue) {
 	}
 }
 
-void * worker_EyeThreadL(void * param) {
+void worker_EyeThreadL(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexEyeL);
@@ -383,14 +389,53 @@ void * worker_EyeThreadL(void * param) {
 	writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
 
 	//optionally could add small time (ms) sleep here for worker thread
+	//Might have to have another variable that signifies that the study is over, then can call pthread_exit() here
+
+	pthread_mutex_lock(&mutexFlag);
+	if (mutexFlag == 0) {
+		pthread_exit(0);
+	}
+	pthread_mutex_unlock(&mutexFlag);
 }
 
-void * worker_EyeThreadR(void * param) {
+void worker_EyeThreadR(void * param) {
+	iViewDataStreamEyeImage* imgToWrite;
+	// first grab lock, check size. If has element then pop it and save off
+	pthread_mutex_lock(&mutexEyeR);
+	if (RightEyeQueue.size > 0) {
+		imgToWrite = RightEyeQueue.pop_Eye(&RightEyeQueue);
 
+	}
+	pthread_mutex_unlock(&mutexEyeR);
+	writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
+
+	//optionally could add small time (ms) sleep here for worker thread
+
+	pthread_mutex_lock(&mutexFlag);
+	if (mutexFlag == 0) {
+		pthread_exit(0);
+	}
+	pthread_mutex_unlock(&mutexFlag);
 }
 
-void * worker_SceneThread(void * param) {
+void worker_SceneThread(void * param) {
+	iViewDataStreamSceneImage* imgToWrite;
+	// first grab lock, check size. If has element then pop it and save off
+	pthread_mutex_lock(&mutexScene);
+	if (LeftEyeQueue.size > 0) {
+		imgToWrite = SceneQueue.pop_Scene(&SceneQueue);
 
+	}
+	pthread_mutex_unlock(&mutexScene);
+	writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
+
+	//optionally could add small time (ms) sleep here for worker thread
+
+	pthread_mutex_lock(&mutexFlag);
+	if (mutexFlag == 0) {
+		pthread_exit(0);
+	}
+	pthread_mutex_unlock(&mutexFlag);
 }
 
 /* **************************************************************************************** */
@@ -1393,9 +1438,13 @@ iViewRC Cleanup () {
  */
 void WaitForUserInteraction () {
 
-	//TODO: start threads for each queue
-	//TODO: make imgWrite functions for each type of queue, confirm they work. 
-	//TODO: Set up mutex locking and add threading compile flag to build
+	//start threads for each queue
+	pthread_t threadL, threadR, threadScene;
+
+	pthread_create(&threadL, NULL, (void *)&worker_EyeThreadL, NULL);
+	pthread_create(&threadR, NULL, (void *)&worker_EyeThreadR, NULL);
+	pthread_create(&threadScene, NULL, (void *)&worker_SceneThread, NULL);
+
 
 	// Wait for data to arrive via callback
 	printf ("Press 'ESC' to exit.\n");
@@ -1414,7 +1463,11 @@ void WaitForUserInteraction () {
 		key = getch();
 	}
 
-	//TODO: end threads for each queue 
+	//end threads for each queue, done by setting flag
+	//TODO: test this works.
+	pthread_mutex_lock(&mutexFlag);
+	studyFlag = 0;
+	pthread_mutex_unlock(&mutexFlag);
 
 	return;
 }
