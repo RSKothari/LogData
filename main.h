@@ -69,6 +69,7 @@ typedef struct Queue_Eye {
     void (*push_Eye) (struct Queue_Eye*, iViewDataStreamEyeImage*); // add item to tail
     // get item from head and remove it from queue
     iViewDataStreamEyeImage* (*pop_Eye) (struct Queue_Eye*);
+	void(*destroy_Eye) (struct Queue_Eye*);
 } Queue_Eye;
 
 /**
@@ -90,6 +91,7 @@ typedef struct Queue_Scene {
     void (*push_Scene) (struct Queue_Scene*, iViewDataStreamSceneImage*); // add item to tail
     // get item from head and remove it from queue
     iViewDataStreamSceneImage* (*pop_Scene) (struct Queue_Scene*);
+	void(*destroy_Scene) (struct Queue_Scene*);
 } Queue_Scene;
 
 /**
@@ -133,6 +135,15 @@ void destroy_EyeQueue(Queue_Eye* queue);
 * Function that frees memory used for eye queue
 */
 void destroy_SceneQueue(Queue_Scene* queue);
+
+
+/**
+* Worker functions that will be assigned to each thread that saves off images from
+* the corresponding queue.
+*/
+void * worker_EyeThreadL(void * param);
+void * worker_EyeThreadR(void * param);
+void * worker_SceneThread(void * param);
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */
