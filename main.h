@@ -136,13 +136,14 @@ void destroy_EyeQueue(Queue_Eye* queue);
 */
 void destroy_SceneQueue(Queue_Scene* queue);
 
+
 /**
 * Worker functions that will be assigned to each thread that saves off images from
 * the corresponding queue.
 */
-void * worker_EyeThreadL(void * param);
-void * worker_EyeThreadR(void * param);
-void * worker_SceneThread(void * param);
+void worker_EyeThreadL(void * param);
+void worker_EyeThreadR(void * param);
+void worker_SceneThread(void * param);
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */

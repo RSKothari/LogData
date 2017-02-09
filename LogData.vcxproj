@@ -58,7 +58,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libiViewNG-LibCore.lib;opencv_core244.lib;opencv_haartraining_engine.lib;opencv_highgui244.lib;opencv_imgproc244.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pthreadVC2.lib;libiViewNG-LibCore.lib;opencv_core244.lib;opencv_haartraining_engine.lib;opencv_highgui244.lib;opencv_imgproc244.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\SMI\iView NG SDK\lib\lib-Windows7-32;C:\Program Files (x86)\SMI\iView NG SDK\examples\OpenCV\lib-Windows7-32;C:\Program Files (x86)\SMI\iView NG SDK\examples\C\Tutorial-RemoteViewer\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
