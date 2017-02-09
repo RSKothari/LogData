@@ -139,11 +139,11 @@ void destroy_SceneQueue(Queue_Scene* queue);
 
 /**
 * Worker functions that will be assigned to each thread that saves off images from
-* the corresponding queue.
+* the corresponding queue. bjohn: playing with return values to match the win32-pthreads library!
 */
-void worker_EyeThreadL(void * param);
-void worker_EyeThreadR(void * param);
-void worker_SceneThread(void * param);
+static void * _cdecl  worker_EyeThreadL(void * param);
+static void * _cdecl  worker_EyeThreadR(void * param);
+static void * _cdecl  worker_SceneThread(void * param);
 
 /* **************************************************************************************** */
 /* *************************************** FUNCTIONS  ************************************* */

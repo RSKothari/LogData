@@ -377,7 +377,7 @@ void destroy_SceneQueue(Queue_Scene* queue) {
 	}
 }
 
-void worker_EyeThreadL(void * param) {
+static void * _cdecl worker_EyeThreadL(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexEyeL);
@@ -394,11 +394,14 @@ void worker_EyeThreadL(void * param) {
 	pthread_mutex_lock(&mutexFlag);
 	if (mutexFlag == 0) {
 		pthread_exit(0);
+		return NULL;
 	}
 	pthread_mutex_unlock(&mutexFlag);
+
+	
 }
 
-void worker_EyeThreadR(void * param) {
+static void * _cdecl worker_EyeThreadR(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexEyeR);
@@ -414,11 +417,12 @@ void worker_EyeThreadR(void * param) {
 	pthread_mutex_lock(&mutexFlag);
 	if (mutexFlag == 0) {
 		pthread_exit(0);
+		return NULL;
 	}
 	pthread_mutex_unlock(&mutexFlag);
 }
 
-void worker_SceneThread(void * param) {
+static void * _cdecl worker_SceneThread(void * param) {
 	iViewDataStreamSceneImage* imgToWrite;
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexScene);
@@ -434,6 +438,7 @@ void worker_SceneThread(void * param) {
 	pthread_mutex_lock(&mutexFlag);
 	if (mutexFlag == 0) {
 		pthread_exit(0);
+		return NULL;
 	}
 	pthread_mutex_unlock(&mutexFlag);
 }
@@ -1440,10 +1445,10 @@ void WaitForUserInteraction () {
 
 	//start threads for each queue
 	pthread_t threadL, threadR, threadScene;
-
-	pthread_create(&threadL, NULL, (void *)&worker_EyeThreadL, NULL);
-	pthread_create(&threadR, NULL, (void *)&worker_EyeThreadR, NULL);
-	pthread_create(&threadScene, NULL, (void *)&worker_SceneThread, NULL);
+	
+	pthread_create(&threadL, NULL, worker_EyeThreadL, NULL);
+	pthread_create(&threadR, NULL, worker_EyeThreadR, NULL);
+	pthread_create(&threadScene, NULL, worker_SceneThread, NULL);
 
 
 	// Wait for data to arrive via callback
