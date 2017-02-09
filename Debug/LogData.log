@@ -1,6 +1,1 @@
-﻿  main.c
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(602): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(613): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(900): warning C4244: '=': conversion from 'uint64_t' to 'unsigned int', possible loss of data
-  LogData.vcxproj -> C:\Users\Rakshit\Documents\Visual Studio 2015\Projects\LogData\Debug\LogData.exe
-  LogData.vcxproj -> C:\Users\Rakshit\Documents\Visual Studio 2015\Projects\LogData\Debug\LogData.pdb (Full PDB)
+﻿
