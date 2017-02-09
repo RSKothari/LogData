@@ -185,10 +185,10 @@ int main (int argc, char ** argv) {
 	cout << "Enter task number: ";
 	getline(cin, taskNum);  
 
-	RightEyeImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\RightEyeImages";
-	LeftEyeImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\LeftEyeImages";
-	SceneImageLoc = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\SceneImages";
-	pathToGaze = "C:\\Users\\Rakshit Kothari\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\GazeData";
+	RightEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData" + prName + "\\" + taskNum + "\\RightEyeImages";
+	LeftEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\LeftEyeImages";
+	SceneImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\SceneImages";
+	pathToGaze = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\GazeData";
 	pathToGazeText = pathToGaze	+ "\\Gaze_Data.txt";
 
 	if (_mkdir(RightEyeImageLoc.c_str()) == 0)
