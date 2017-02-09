@@ -1,0 +1,1 @@
+To use library copy the header files from include into the Include directory for Visual Studio (C:\Program Files (x86)\Microsoft Visual Studio 14.0 for VS 2015). Then copy the .lib file into the lib folder there as well. Also copy the .dll from the bin folder here into the bin folder for Visual Studio.

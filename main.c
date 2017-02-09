@@ -496,13 +496,25 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
 		case EYE_LEFT:
 
 			//displayLeftEyeImage (image->imageData);
-			writeImage(image->imageData, image->eyeFrameNumber, LeftEyeImageLoc, compression_params);
+			//writeImage(image->imageData, image->eyeFrameNumber, LeftEyeImageLoc, compression_params);
+			
+			//bjohn: instead of writing image we add to queue using mutex lock.
+			pthread_mutex_unlock(&mutexEyeL);
+			LeftEyeQueue.push_Eye(&LeftEyeQueue, image);
+			pthread_mutex_lock(&mutexEyeL);
+			
 			break;
 
 		case EYE_RIGHT:
 
 			//displayRightEyeImage (image->imageData);
-			writeImage(image->imageData, image->eyeFrameNumber, RightEyeImageLoc, compression_params);
+			//writeImage(image->imageData, image->eyeFrameNumber, RightEyeImageLoc, compression_params);
+			
+			//bjohn: instead of writing image we add to queue using mutex lock.
+			pthread_mutex_unlock(&mutexEyeR);
+			RightEyeQueue.push_Eye(&RightEyeQueue, image);
+			pthread_mutex_lock(&mutexEyeR);
+			
 			break;
 
 		case EYE_UNKNOWN:
@@ -519,10 +531,15 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
  * This function will be called from MyCallback() when a new scene image is available.
  */
 void handleSceneImageWithGaze (iViewDataStreamSceneImage * image) {
-	
 	//gCurrentFrameNumber = image->sceneFrameNumber;
 	//displaySceneImage (image->imageData);
-	writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+
+	//bjohn: instead of writing image we add to queue using mutex lock.
+	pthread_mutex_unlock(&mutexScene);
+	SceneQueue.push_Scene(&SceneQueue, image);
+	pthread_mutex_lock(&mutexScene);
+
 	return;
 }
 
@@ -533,7 +550,7 @@ void handleSceneImageWithGaze (iViewDataStreamSceneImage * image) {
  */
 void handleH264DecodedSceneImage (iViewDataStreamSceneImage * image) {
 
-	gCurrentFrameNumber = image->sceneFrameNumber;
+	//gCurrentFrameNumber = image->sceneFrameNumber;
 
 	/*
 	// Draw gaze onto scene only if requested.
@@ -542,7 +559,12 @@ void handleH264DecodedSceneImage (iViewDataStreamSceneImage * image) {
 	}
 	*/
 	//displaySceneImage (image->imageData);
-	writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+
+	//bjohn: instead of writing image we add to queue using mutex lock.
+	pthread_mutex_unlock(&mutexScene);
+	SceneQueue.push_Scene(&SceneQueue, image);
+	pthread_mutex_lock(&mutexScene);
 	return;
 }
 
