@@ -46,3 +46,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 LogData.VC.VC.opendb
+*.suo
+*.ipch
+*.db
