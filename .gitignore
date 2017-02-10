@@ -50,3 +50,4 @@ LogData.VC.VC.opendb
 *.ipch
 *.db
 *.opendb
+LogData.VC.db
