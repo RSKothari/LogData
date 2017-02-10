@@ -51,3 +51,4 @@ LogData.VC.VC.opendb
 *.db
 *.opendb
 LogData.VC.db
+/./Debug/*

@@ -1,9 +1,0 @@
-﻿  main.c
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(837): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(848): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(1135): warning C4244: '=': conversion from 'uint64_t' to 'unsigned int', possible loss of data
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(402): warning C4715: 'worker_EyeThreadL': not all control paths return a value
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(423): warning C4715: 'worker_EyeThreadR': not all control paths return a value
-c:\users\rakshit\documents\visual studio 2015\projects\logdata\main.c(444): warning C4715: 'worker_SceneThread': not all control paths return a value
-  LogData.vcxproj -> C:\Users\Rakshit\Documents\Visual Studio 2015\Projects\LogData\Debug\LogData.exe
-  LogData.vcxproj -> C:\Users\Rakshit\Documents\Visual Studio 2015\Projects\LogData\Debug\LogData.pdb (Full PDB)

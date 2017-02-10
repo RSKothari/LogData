@@ -379,20 +379,25 @@ void destroy_SceneQueue(Queue_Scene* queue) {
 
 static void * _cdecl worker_EyeThreadL(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
+	int val = 0;
+
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexEyeL);
 	if (LeftEyeQueue.size > 0) {
 		imgToWrite = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
-		
+		val = 1;
 	}
 	pthread_mutex_unlock(&mutexEyeL);
-	writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
-
+	
+	if (val) {
+		writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
+	}
+	
 	//optionally could add small time (ms) sleep here for worker thread
-	//Might have to have another variable that signifies that the study is over, then can call pthread_exit() here
+	//Currently use another variable that signifies that the study is over, then can call pthread_exit() here
 
 	pthread_mutex_lock(&mutexFlag);
-	if (mutexFlag == 0) {
+	if (studyFlag == 0) {
 		pthread_exit(0);
 		return NULL;
 	}
@@ -403,19 +408,23 @@ static void * _cdecl worker_EyeThreadL(void * param) {
 
 static void * _cdecl worker_EyeThreadR(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
+	int val = 0;
+
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexEyeR);
 	if (RightEyeQueue.size > 0) {
 		imgToWrite = RightEyeQueue.pop_Eye(&RightEyeQueue);
-
+		val = 1;
 	}
 	pthread_mutex_unlock(&mutexEyeR);
-	writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
-
+	
+	if (val) {
+		writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
+	}
 	//optionally could add small time (ms) sleep here for worker thread
 
 	pthread_mutex_lock(&mutexFlag);
-	if (mutexFlag == 0) {
+	if (studyFlag == 0) {
 		pthread_exit(0);
 		return NULL;
 	}
@@ -424,19 +433,23 @@ static void * _cdecl worker_EyeThreadR(void * param) {
 
 static void * _cdecl worker_SceneThread(void * param) {
 	iViewDataStreamSceneImage* imgToWrite;
+	int val = 0;
+
 	// first grab lock, check size. If has element then pop it and save off
 	pthread_mutex_lock(&mutexScene);
 	if (LeftEyeQueue.size > 0) {
 		imgToWrite = SceneQueue.pop_Scene(&SceneQueue);
-
+		val = 1;
 	}
 	pthread_mutex_unlock(&mutexScene);
-	writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
-
+	
+	if (val) {
+		writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
+	}
 	//optionally could add small time (ms) sleep here for worker thread
 
 	pthread_mutex_lock(&mutexFlag);
-	if (mutexFlag == 0) {
+	if (studyFlag == 0) {
 		pthread_exit(0);
 		return NULL;
 	}
