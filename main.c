@@ -53,6 +53,11 @@
 #include <iViewNG-DataAcquisition.h>
 #include <iViewNG-Device-ETG.h>
 
+#include <string.h>
+#include <limits.h>     
+#include <sys/stat.h>   
+#include <errno.h>
+
 #include <iViewNG-Utility.h>
 
 #include "iViewNG-Convenience.h"
@@ -185,17 +190,17 @@ int main (int argc, char ** argv) {
 	cout << "Enter task number: ";
 	getline(cin, taskNum);  
 
-	RightEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData" + prName + "\\" + taskNum + "\\RightEyeImages";
-	LeftEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\LeftEyeImages";
-	SceneImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\SceneImages";
-	pathToGaze = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName + "\\" + taskNum + "\\GazeData";
+	RightEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName +"\\" + taskNum + "\\RightEyeImages";
+	LeftEyeImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName +"\\" + taskNum + "\\LeftEyeImages";
+	SceneImageLoc = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName +"\\" + taskNum + "\\SceneImages";
+	pathToGaze = "C:\\Users\\Rakshit\\Documents\\ETGData\\" + prName +"\\" + taskNum + "\\GazeData";
 	pathToGazeText = pathToGaze	+ "\\Gaze_Data.txt";
-
-	if (_mkdir(RightEyeImageLoc.c_str()) == 0)
+	
+	if (mkdir_p(RightEyeImageLoc.c_str()) == 0)
 	{
-		_mkdir(LeftEyeImageLoc.c_str());
-		_mkdir(SceneImageLoc.c_str());
-		_mkdir(pathToGaze.c_str());
+		mkdir_p(LeftEyeImageLoc.c_str());
+		mkdir_p(SceneImageLoc.c_str());
+		mkdir_p(pathToGaze.c_str());
 		printf("Directories successfully created");
 	}
 	else 
@@ -206,14 +211,14 @@ int main (int argc, char ** argv) {
 		_rmdir(SceneImageLoc.c_str());
 		_rmdir(pathToGaze.c_str());
 
-		_mkdir(RightEyeImageLoc.c_str());
-		_mkdir(LeftEyeImageLoc.c_str());
-		_mkdir(SceneImageLoc.c_str());
-		_mkdir(pathToGaze.c_str());
+		mkdir_p(RightEyeImageLoc.c_str());
+		mkdir_p(LeftEyeImageLoc.c_str());
+		mkdir_p(SceneImageLoc.c_str());
+		mkdir_p(pathToGaze.c_str());
 
 		printf("Directories successfully created");
 	}
-
+	
 	cout << RightEyeImageLoc << "\n";
 	cout << LeftEyeImageLoc << "\n";
 	cout << SceneImageLoc << "\n";
@@ -244,7 +249,7 @@ int main (int argc, char ** argv) {
 	SceneQueue      = createSceneQueue();
 	studyFlag       = 1;
 
-	WaitForUserInteraction ();
+	WaitForUserInteraction();
 
 	// destroy the queue's
 	LeftEyeQueue.destroy_Eye(&LeftEyeQueue);
@@ -260,6 +265,48 @@ int main (int argc, char ** argv) {
 }
 
 /* **************************************************************************************** */
+// Personal make directory code
+
+int mkdir_p(const char *path)
+{
+	const int PATH_MAX = 256;
+	/* Adapted from http://stackoverflow.com/a/2336245/119527 */
+	const size_t len = strlen(path);
+	char _path[PATH_MAX];
+	char *p;
+
+	errno = 0;
+
+	/* Copy string so its mutable */
+	if (len > sizeof(_path) - 1) {
+		errno = ENAMETOOLONG;
+		return -1;
+	}
+	strcpy(_path, path);
+
+	/* Iterate the string */
+	for (p = _path + 1; *p; p++) {
+		if (*p == '\\') {
+			/* Temporarily truncate */
+			*p = '\0';
+
+			if (_mkdir(_path) != 0) {
+				if (errno != EEXIST)
+					return -1;
+			}
+
+			*p = '/';
+		}
+	}
+
+	if (_mkdir(_path) != 0) {
+		if (errno != EEXIST)
+			return -1;
+	}
+
+	return 0;
+}
+
 
 /**
  * Create and initiate a scene queue
@@ -380,80 +427,98 @@ void destroy_SceneQueue(Queue_Scene* queue) {
 static void * _cdecl worker_EyeThreadL(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
 	int val = 0;
+	int doLoop = 1;
 
-	// first grab lock, check size. If has element then pop it and save off
-	pthread_mutex_lock(&mutexEyeL);
-	if (LeftEyeQueue.size > 0) {
-		imgToWrite = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
-		val = 1;
-	}
-	pthread_mutex_unlock(&mutexEyeL);
-	
-	if (val) {
-		writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
-	}
-	
-	//optionally could add small time (ms) sleep here for worker thread
-	//Currently use another variable that signifies that the study is over, then can call pthread_exit() here
+	while (doLoop == 1)
+	{
 
-	pthread_mutex_lock(&mutexFlag);
-	if (studyFlag == 0) {
-		pthread_exit(0);
-		return NULL;
-	}
-	pthread_mutex_unlock(&mutexFlag);
-
+		// first grab lock, check size. If has element then pop it and save off
+		pthread_mutex_lock(&mutexEyeL);
+		if (LeftEyeQueue.size > 0) {
+			imgToWrite = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
+			val = 1;
+		}
+		pthread_mutex_unlock(&mutexEyeL);
 	
+		if (val == 1) {
+			writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
+			val = 0;
+		}
+	
+		//optionally could add small time (ms) sleep here for worker thread
+		//Currently use another variable that signifies that the study is over, then can call pthread_exit() here
+
+		pthread_mutex_lock(&mutexFlag);
+		if (studyFlag == 0) {
+			doLoop = 0;
+			//pthread_exit(0);
+		}
+		pthread_mutex_unlock(&mutexFlag);
+	}
+	return NULL;
 }
 
 static void * _cdecl worker_EyeThreadR(void * param) {
 	iViewDataStreamEyeImage* imgToWrite;
 	int val = 0;
+	int doLoop = 1;
 
-	// first grab lock, check size. If has element then pop it and save off
-	pthread_mutex_lock(&mutexEyeR);
-	if (RightEyeQueue.size > 0) {
-		imgToWrite = RightEyeQueue.pop_Eye(&RightEyeQueue);
-		val = 1;
-	}
-	pthread_mutex_unlock(&mutexEyeR);
+	while (doLoop == 1)
+	{
+		// first grab lock, check size. If has element then pop it and save off
+		pthread_mutex_lock(&mutexEyeR);
+		if (RightEyeQueue.size > 0) {
+			imgToWrite = RightEyeQueue.pop_Eye(&RightEyeQueue);
+			val = 1;
+		}
+		pthread_mutex_unlock(&mutexEyeR);
 	
-	if (val) {
-		writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
-	}
-	//optionally could add small time (ms) sleep here for worker thread
+		if (val == 1) {
+			writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
+			val = 0;
+		}
+		//optionally could add small time (ms) sleep here for worker thread
 
-	pthread_mutex_lock(&mutexFlag);
-	if (studyFlag == 0) {
-		pthread_exit(0);
-		return NULL;
+		pthread_mutex_lock(&mutexFlag);
+		if (studyFlag == 0) {
+			doLoop = 0;
+			//pthread_exit(0);	
+		}
+		pthread_mutex_unlock(&mutexFlag);
 	}
-	pthread_mutex_unlock(&mutexFlag);
+	return NULL;
 }
 
 static void * _cdecl worker_SceneThread(void * param) {
 	iViewDataStreamSceneImage* imgToWrite;
 	int val = 0;
+	int doLoop = 1;
 
-	// first grab lock, check size. If has element then pop it and save off
-	pthread_mutex_lock(&mutexScene);
-	if (LeftEyeQueue.size > 0) {
-		imgToWrite = SceneQueue.pop_Scene(&SceneQueue);
-		val = 1;
-	}
-	pthread_mutex_unlock(&mutexScene);
+	while (doLoop == 1)
+	{
+		// first grab lock, check size. If has element then pop it and save off
+		pthread_mutex_lock(&mutexScene);
+		if (LeftEyeQueue.size > 0) {
+			imgToWrite = SceneQueue.pop_Scene(&SceneQueue);
+			val = 1;
+		}
+		pthread_mutex_unlock(&mutexScene);
 	
-	if (val) {
-		writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
-	}
-	//optionally could add small time (ms) sleep here for worker thread
+		if (val == 1) {
+			writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
+			val = 0;
+		}
+		//optionally could add small time (ms) sleep here for worker thread
 
-	pthread_mutex_lock(&mutexFlag);
-	if (studyFlag == 0) {
-		pthread_exit(0);
-		return NULL;
+		pthread_mutex_lock(&mutexFlag);
+		if (studyFlag == 0) {
+			doLoop = 0;
+			//pthread_exit(0);
+			
+		}
+		pthread_mutex_unlock(&mutexFlag);
 	}
-	pthread_mutex_unlock(&mutexFlag);
+	return NULL;
 }
 
 /* **************************************************************************************** */
@@ -471,24 +536,6 @@ void handleGazeSample (iViewDataStreamGazeSample const * const gazeSample) {
 
 	// Print to console only if requested.
 	if (gShowGaze)
-		/*
-		printf ("Gaze Sample %u: serverTime=%ums, por=%d/%d, synchDate %04d.%02d.%02d %02d:%02d:%02d.%03d\n", gazeSample->eyeFrameNumber,
-		        (uint32_t) (gazeSample->timestamp / 1000000), gGazeX, gGazeY,
-				gazeSample->year, gazeSample->month, gazeSample->day,
-				gazeSample->hour, gazeSample->minute, gazeSample->second,
-				gazeSample->millisecond
-				);
-				*/
-		/*
-		sprintf (str2Write, "EyeFrameNumber %u, SceneFrameNumber %u, serverTime %ums, BporX %d, BporY %d, synchDate %04d.%02d.%02d %02d:%02d:%02d.%03d\n", 
-				gazeSample->eyeFrameNumber,
-				gazeSample->sceneFrameNumber,
-		        (uint32_t) (gazeSample->timestamp / 1000000), gGazeX, gGazeY,
-				gazeSample->year, gazeSample->month, gazeSample->day,
-				gazeSample->hour, gazeSample->minute, gazeSample->second,
-				gazeSample->millisecond
-				);
-				*/
 
 		sprintf(str2Write,"%u,%u,%u,%d,%d,%04d,%02d,%02d,%02d,%02d,%02d,%03d\n",
 				gazeSample->eyeFrameNumber, gazeSample->sceneFrameNumber,
@@ -517,10 +564,10 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
 			//writeImage(image->imageData, image->eyeFrameNumber, LeftEyeImageLoc, compression_params);
 			
 			//bjohn: instead of writing image we add to queue using mutex lock.
-			pthread_mutex_unlock(&mutexEyeL);
-			LeftEyeQueue.push_Eye(&LeftEyeQueue, image);
 			pthread_mutex_lock(&mutexEyeL);
-			
+			LeftEyeQueue.push_Eye(&LeftEyeQueue, image);
+			pthread_mutex_unlock(&mutexEyeL);
+
 			break;
 
 		case EYE_RIGHT:
@@ -529,9 +576,9 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
 			//writeImage(image->imageData, image->eyeFrameNumber, RightEyeImageLoc, compression_params);
 			
 			//bjohn: instead of writing image we add to queue using mutex lock.
-			pthread_mutex_unlock(&mutexEyeR);
-			RightEyeQueue.push_Eye(&RightEyeQueue, image);
 			pthread_mutex_lock(&mutexEyeR);
+			RightEyeQueue.push_Eye(&RightEyeQueue, image);
+			pthread_mutex_unlock(&mutexEyeR);
 			
 			break;
 
@@ -554,9 +601,10 @@ void handleSceneImageWithGaze (iViewDataStreamSceneImage * image) {
 	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
 
 	//bjohn: instead of writing image we add to queue using mutex lock.
-	pthread_mutex_unlock(&mutexScene);
-	SceneQueue.push_Scene(&SceneQueue, image);
+	
 	pthread_mutex_lock(&mutexScene);
+	SceneQueue.push_Scene(&SceneQueue, image);
+	pthread_mutex_unlock(&mutexScene);
 
 	return;
 }
@@ -580,9 +628,9 @@ void handleH264DecodedSceneImage (iViewDataStreamSceneImage * image) {
 	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
 
 	//bjohn: instead of writing image we add to queue using mutex lock.
-	pthread_mutex_unlock(&mutexScene);
-	SceneQueue.push_Scene(&SceneQueue, image);
 	pthread_mutex_lock(&mutexScene);
+	SceneQueue.push_Scene(&SceneQueue, image);
+	pthread_mutex_unlock(&mutexScene);
 	return;
 }
 
