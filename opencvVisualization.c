@@ -185,7 +185,7 @@ void writeImage (iViewImage *image, int fr_num, string imLoc, vector<int> compre
 		return;
 
 	string tempStr = imLoc + "\\" + to_string( static_cast<long double>(fr_num)) + ".jpg";
-
+	//bjohn: somehow this function gets crap input for the image pointer
 	cvSaveImage(tempStr.c_str(), image);
 	return;
 }

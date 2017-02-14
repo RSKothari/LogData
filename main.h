@@ -99,11 +99,22 @@ typedef struct Queue_Scene {
  * both queue->head and queue->tail will point to it,
  * otherwise the oldtail->next and tail will point to it.
  */
-void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img);
+void push_EyeL (Queue_Eye* queue, iViewDataStreamEyeImage* img);
 /**
  * Return and remove the first item.
  */
-iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue);
+iViewDataStreamEyeImage* pop_EyeL (Queue_Eye* queue);
+
+/**
+* Push an item into eye queue, if this is the first item,
+* both queue->head and queue->tail will point to it,
+* otherwise the oldtail->next and tail will point to it.
+*/
+void push_EyeR(Queue_Eye* queue, iViewDataStreamEyeImage* img);
+/**
+* Return and remove the first item.
+*/
+iViewDataStreamEyeImage* pop_EyeR(Queue_Eye* queue);
 
 /**
  * Push an item into scene queue, if this is the first item,
@@ -119,7 +130,12 @@ iViewDataStreamSceneImage* pop_Scene (Queue_Scene* queue);
 /**
 * Create and initiate a Queue_Eye
 */
-Queue_Eye createEyeQueue();
+Queue_Eye createEyeQueueL();
+
+/**
+* Create and initiate a Queue_Eye
+*/
+Queue_Eye createEyeQueueR();
 
 /**
  * Create and initiate a Queue_Scene

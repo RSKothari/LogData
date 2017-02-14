@@ -244,8 +244,8 @@ int main (int argc, char ** argv) {
 	GazeFile << "EyeFrameNumber,SceneFrameNumber,serverTime,BporX,BporY,Year,Month,Day,Hour,Minute,Second,Millisecond\n";
 
 	// Create queue's for scene and eye images
-	LeftEyeQueue    = createEyeQueue();
-	RightEyeQueue   = createEyeQueue();
+	LeftEyeQueue    = createEyeQueueL();
+	RightEyeQueue   = createEyeQueueR();
 	SceneQueue      = createSceneQueue();
 	studyFlag       = 1;
 
@@ -325,13 +325,27 @@ Queue_Scene createSceneQueue () {
 /**
  * Create and initiate an eye queue
  */
-Queue_Eye createEyeQueue () {
+Queue_Eye createEyeQueueL () {
     Queue_Eye queue;
     queue.size        = 0;
     queue.head        = NULL;
     queue.tail        = NULL;
-    queue.push_Eye    = &push_Eye;
-    queue.pop_Eye     = &pop_Eye;
+    queue.push_Eye    = &push_EyeL;
+    queue.pop_Eye     = &pop_EyeL;
+	queue.destroy_Eye = &destroy_EyeQueue;
+	return queue;
+}
+
+/**
+* Create and initiate an eye queue
+*/
+Queue_Eye createEyeQueueR() {
+	Queue_Eye queue;
+	queue.size = 0;
+	queue.head = NULL;
+	queue.tail = NULL;
+	queue.push_Eye = &push_EyeR;
+	queue.pop_Eye = &pop_EyeR;
 	queue.destroy_Eye = &destroy_EyeQueue;
 	return queue;
 }
@@ -371,11 +385,32 @@ iViewDataStreamSceneImage* pop_Scene (Queue_Scene* queue) {
 }
 
 /**
+* Push an item into scene queue, if this is the first item,
+* both queue->head and queue->tail will point to it,
+* otherwise the oldtail->next and tail will point to it.
+*/
+void push_EyeL(Queue_Eye* queue, iViewDataStreamEyeImage* img) {
+	// Create a new node
+	Node_Eye* n = (Node_Eye*)malloc(sizeof(Node_Eye));
+	n->img = img;
+	n->next = NULL;
+
+	if (queue->head == NULL) { // no head
+		queue->head = n;
+	}
+	else {
+		queue->tail->next = n;
+	}
+	queue->tail = n;
+	queue->size++;
+}
+
+/**
  * Push an item into scene queue, if this is the first item,
  * both queue->head and queue->tail will point to it,
  * otherwise the oldtail->next and tail will point to it.
  */
-void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
+void push_EyeR (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
     // Create a new node
     Node_Eye* n = (Node_Eye*) malloc (sizeof(Node_Eye));
     n->img        = img;
@@ -389,10 +424,26 @@ void push_Eye (Queue_Eye* queue, iViewDataStreamEyeImage* img) {
     queue->tail = n;
     queue->size++;
 }
+
+/**
+* Return and remove the first item from scene queue
+*/
+iViewDataStreamEyeImage* pop_EyeL(Queue_Eye* queue) {
+	// get the first item
+	Node_Eye* head = queue->head;
+	iViewDataStreamEyeImage* img = head->img;
+	// move head pointer to next node, decrease size
+	queue->head = head->next;
+	queue->size--;
+	// free the memory of original head
+	free(head);
+	return img;
+}
+
 /**
  * Return and remove the first item from scene queue
  */
-iViewDataStreamEyeImage* pop_Eye (Queue_Eye* queue) {
+iViewDataStreamEyeImage* pop_EyeR (Queue_Eye* queue) {
     // get the first item
     Node_Eye* head = queue->head;
     iViewDataStreamEyeImage* img = head->img;
@@ -425,24 +476,26 @@ void destroy_SceneQueue(Queue_Scene* queue) {
 }
 
 static void * _cdecl worker_EyeThreadL(void * param) {
-	iViewDataStreamEyeImage* imgToWrite;
-	int val = 0;
-	int doLoop = 1;
+	iViewDataStreamEyeImage* imgToWriteL;
+	int valL = 0;
+	int doLoopL = 1;
 
-	while (doLoop == 1)
+	while (doLoopL == 1)
 	{
 
 		// first grab lock, check size. If has element then pop it and save off
 		pthread_mutex_lock(&mutexEyeL);
 		if (LeftEyeQueue.size > 0) {
-			imgToWrite = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
-			val = 1;
+			imgToWriteL = LeftEyeQueue.pop_Eye(&LeftEyeQueue);
+			valL = 1;
 		}
 		pthread_mutex_unlock(&mutexEyeL);
 	
-		if (val == 1) {
-			writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, LeftEyeImageLoc, compression_params);
-			val = 0;
+		if (valL == 1) {
+			if (imgToWriteL->imageData != NULL) {
+				writeImage(imgToWriteL->imageData, imgToWriteL->eyeFrameNumber, LeftEyeImageLoc, compression_params);
+			}
+			valL = 0;
 		}
 	
 		//optionally could add small time (ms) sleep here for worker thread
@@ -450,7 +503,7 @@ static void * _cdecl worker_EyeThreadL(void * param) {
 
 		pthread_mutex_lock(&mutexFlag);
 		if (studyFlag == 0) {
-			doLoop = 0;
+			doLoopL = 0;
 			//pthread_exit(0);
 		}
 		pthread_mutex_unlock(&mutexFlag);
@@ -459,29 +512,36 @@ static void * _cdecl worker_EyeThreadL(void * param) {
 }
 
 static void * _cdecl worker_EyeThreadR(void * param) {
-	iViewDataStreamEyeImage* imgToWrite;
-	int val = 0;
-	int doLoop = 1;
+	iViewDataStreamEyeImage* imgToWriteR;
+	int valR = 0;
+	int doLoopR = 1;
 
-	while (doLoop == 1)
+	while (doLoopR == 1)
 	{
 		// first grab lock, check size. If has element then pop it and save off
 		pthread_mutex_lock(&mutexEyeR);
 		if (RightEyeQueue.size > 0) {
-			imgToWrite = RightEyeQueue.pop_Eye(&RightEyeQueue);
-			val = 1;
+			imgToWriteR = RightEyeQueue.pop_Eye(&RightEyeQueue);
+			valR = 1;
 		}
 		pthread_mutex_unlock(&mutexEyeR);
 	
-		if (val == 1) {
-			writeImage(imgToWrite->imageData, imgToWrite->eyeFrameNumber, RightEyeImageLoc, compression_params);
-			val = 0;
+		if (valR == 1) {
+			//Lets do a null check on the image data
+
+			if (imgToWriteR->imageData != NULL){
+			writeImage(imgToWriteR->imageData, imgToWriteR->eyeFrameNumber, RightEyeImageLoc, compression_params);
+			}
+			valR = 0;
+			//bjohn: do I need to free this ptr?
+			//free(imgToWriteR);
+			//imgToWriteR = NULL;
 		}
 		//optionally could add small time (ms) sleep here for worker thread
 
 		pthread_mutex_lock(&mutexFlag);
 		if (studyFlag == 0) {
-			doLoop = 0;
+			doLoopR = 0;
 			//pthread_exit(0);	
 		}
 		pthread_mutex_unlock(&mutexFlag);
@@ -498,14 +558,16 @@ static void * _cdecl worker_SceneThread(void * param) {
 	{
 		// first grab lock, check size. If has element then pop it and save off
 		pthread_mutex_lock(&mutexScene);
-		if (LeftEyeQueue.size > 0) {
+		if (SceneQueue.size > 0) {
 			imgToWrite = SceneQueue.pop_Scene(&SceneQueue);
 			val = 1;
 		}
 		pthread_mutex_unlock(&mutexScene);
 	
 		if (val == 1) {
-			writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
+			if (imgToWrite->imageData != NULL) {
+				writeImage(imgToWrite->imageData, imgToWrite->sceneFrameNumber, SceneImageLoc, compression_params);
+			}
 			val = 0;
 		}
 		//optionally could add small time (ms) sleep here for worker thread
