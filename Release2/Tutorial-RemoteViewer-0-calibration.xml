@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <CalibrationChronicle Version="1.0">
-  <Calibration Timestamp="30628" Type="CALIBRATIONTYPE_3_POINT" ApplyAtFrame="-1" Distance="0">
+  <Calibration Timestamp="70506" Type="CALIBRATIONTYPE_3_POINT" ApplyAtFrame="-1" Distance="0">
+    <CalibrationData Timestamp="116709" SceneFrameIndex="11043" PointOfRegardX="105" PointOfRegardY="148" />
+    <CalibrationData Timestamp="128968" SceneFrameIndex="11409" PointOfRegardX="905" PointOfRegardY="88" />
+    <CalibrationData Timestamp="145735" SceneFrameIndex="11915" PointOfRegardX="493" PointOfRegardY="569" />
+  </Calibration>

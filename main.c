@@ -662,8 +662,20 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
  * This function will be called from MyCallback() when a new scene image is available.
  */
 void handleSceneImageWithGaze (iViewDataStreamSceneImage * image) {
-	//gCurrentFrameNumber = image->sceneFrameNumber;
-	displaySceneImage (image->imageData);
+	
+	if (gCalibrationPointsToDo <= 3 && gCalibrationPointsToDo >= 1)
+	{
+		drawGazeOverlay(image->imageData, gGazeX, gGazeY);
+		gCurrentFrameNumber = image->sceneFrameNumber;
+		displaySceneImage(image->imageData);
+
+		if (gCalibrationPointsToDo == 0)
+		{
+			closeSceneImageDisplay();
+		}
+
+	}
+	
 	writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
 
 	//bjohn: instead of writing image we add to queue using mutex lock.
