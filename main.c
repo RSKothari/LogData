@@ -182,6 +182,8 @@ int studyFlag;
 
 int main (int argc, char ** argv) {
 	
+	printf("%d \n", argc);
+
 	string prName;
 	string taskNum;
 
@@ -227,40 +229,40 @@ int main (int argc, char ** argv) {
 
 
 	// Compression parameters	
-    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    compression_params.push_back(9);
+    compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+    compression_params.push_back(50);
 
 	iViewRC rc;
-
+	
 	memset (&gServer, 0, sizeof(iViewHost));
 
 	if ( (rc = ParseCommandLine (argc, argv)) || (rc = Setup ()) || (rc = Subscribe ()) || (rc = Start ()) || (rc = SetupCalib ()))
 		return RC_OPERATION_FAILED;
 
 	printf ("Receiving data...\n");
-
+	
 	// Create file for writing Gaze Data
 	GazeFile.open(pathToGazeText);
-	GazeFile << "EyeFrameNumber,SceneFrameNumber,serverTime,BporX,BporY,Year,Month,Day,Hour,Minute,Second,Millisecond\n";
+	GazeFile << "R_EyeBallUncert,R_PupilConf,L_EyeBallUncert,L_PupilConf,EyeFrameNumber,SceneFrameNumber,serverTime,BporX,BporY,GV_R_x,GV_R_y,GV_R_z,GV_L_x,GV_L_y,GV_L_z,Year,Month,Day,Hour,Minute,Second,Millisecond\n";
 
 	// Create queue's for scene and eye images
-	LeftEyeQueue    = createEyeQueueL();
-	RightEyeQueue   = createEyeQueueR();
-	SceneQueue      = createSceneQueue();
-	studyFlag       = 1;
-
+	//LeftEyeQueue    = createEyeQueueL();111
+	//RightEyeQueue   = createEyeQueueR();
+	//SceneQueue      = createSceneQueue();
+	//studyFlag       = 1;
+	
 	WaitForUserInteraction();
 
 	// destroy the queue's
-	LeftEyeQueue.destroy_Eye(&LeftEyeQueue);
-	RightEyeQueue.destroy_Eye(&RightEyeQueue);
-	SceneQueue.destroy_Scene(&SceneQueue);
+	//LeftEyeQueue.destroy_Eye(&LeftEyeQueue);
+	//RightEyeQueue.destroy_Eye(&RightEyeQueue);
+	//SceneQueue.destroy_Scene(&SceneQueue);
 
 	printf ("Cleaning up...\n");
 
 	Cleanup ();
 	GazeFile.close();
-
+	
 	return 0;
 }
 
@@ -591,7 +593,6 @@ static void * _cdecl worker_SceneThread(void * param) {
 void handleGazeSample (iViewDataStreamGazeSample const * const gazeSample) {
 	
 
-
 	// round the x and y coordinate
 	gGazeX = (int) (gazeSample->pointOfRegard.x + 0.5);
 	gGazeY = (int) (gazeSample->pointOfRegard.y + 0.5);
@@ -599,9 +600,12 @@ void handleGazeSample (iViewDataStreamGazeSample const * const gazeSample) {
 	// Print to console only if requested.
 	if (gShowGaze)
 
-		sprintf(str2Write,"%u,%u,%u,%d,%d,%04d,%02d,%02d,%02d,%02d,%02d,%03d\n",
+		sprintf(str2Write,"%f,%f,%f,%f,%u,%u,%u,%d,%d,%f,%f,%f,%f,%f,%f,%04d,%02d,%02d,%02d,%02d,%02d,%03d\n",
+				gazeSample->rightEye.eyeballUncertainty, gazeSample->rightEye.pupilConfidence, gazeSample->leftEye.eyeballUncertainty, gazeSample->leftEye.pupilConfidence,
 				gazeSample->eyeFrameNumber, gazeSample->sceneFrameNumber,
 		        (uint32_t) (gazeSample->timestamp / 1000000), gGazeX, gGazeY,
+				gazeSample->rightEye.gazeDirection.x, gazeSample->rightEye.gazeDirection.y, gazeSample->rightEye.gazeDirection.z,
+				gazeSample->leftEye.gazeDirection.x, gazeSample->leftEye.gazeDirection.y, gazeSample->leftEye.gazeDirection.z,
 				gazeSample->year, gazeSample->month, gazeSample->day,
 				gazeSample->hour, gazeSample->minute, gazeSample->second,
 				gazeSample->millisecond);
@@ -626,21 +630,21 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
 			//writeImage(image->imageData, image->eyeFrameNumber, LeftEyeImageLoc, compression_params);
 			
 			//bjohn: instead of writing image we add to queue using mutex lock.
-			pthread_mutex_lock(&mutexEyeL);
-			LeftEyeQueue.push_Eye(&LeftEyeQueue, image);
-			pthread_mutex_unlock(&mutexEyeL);
+			//pthread_mutex_lock(&mutexEyeL);
+			//LeftEyeQueue.push_Eye(&LeftEyeQueue, image);
+			//pthread_mutex_unlock(&mutexEyeL);
 
 			break;
 
 		case EYE_RIGHT:
 
 			//displayRightEyeImage (image->imageData);
-			//writeImage(image->imageData, image->eyeFrameNumber, RightEyeImageLoc, compression_params);
+			writeImage(image->imageData, image->eyeFrameNumber, RightEyeImageLoc, compression_params);
 			
 			//bjohn: instead of writing image we add to queue using mutex lock.
-			pthread_mutex_lock(&mutexEyeR);
-			RightEyeQueue.push_Eye(&RightEyeQueue, image);
-			pthread_mutex_unlock(&mutexEyeR);
+			//pthread_mutex_lock(&mutexEyeR);
+			//RightEyeQueue.push_Eye(&RightEyeQueue, image);
+			//pthread_mutex_unlock(&mutexEyeR);
 			
 			break;
 
@@ -659,14 +663,14 @@ void handleEyeImage (iViewDataStreamEyeImage * image) {
  */
 void handleSceneImageWithGaze (iViewDataStreamSceneImage * image) {
 	//gCurrentFrameNumber = image->sceneFrameNumber;
-	//displaySceneImage (image->imageData);
-	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+	displaySceneImage (image->imageData);
+	writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
 
 	//bjohn: instead of writing image we add to queue using mutex lock.
 	
-	pthread_mutex_lock(&mutexScene);
-	SceneQueue.push_Scene(&SceneQueue, image);
-	pthread_mutex_unlock(&mutexScene);
+	//pthread_mutex_lock(&mutexScene);
+	//SceneQueue.push_Scene(&SceneQueue, image);
+	//pthread_mutex_unlock(&mutexScene);
 
 	return;
 }
@@ -687,12 +691,12 @@ void handleH264DecodedSceneImage (iViewDataStreamSceneImage * image) {
 	}
 	*/
 	//displaySceneImage (image->imageData);
-	//writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
+	writeImage(image->imageData, image->sceneFrameNumber, SceneImageLoc, compression_params);
 
 	//bjohn: instead of writing image we add to queue using mutex lock.
-	pthread_mutex_lock(&mutexScene);
-	SceneQueue.push_Scene(&SceneQueue, image);
-	pthread_mutex_unlock(&mutexScene);
+	//pthread_mutex_lock(&mutexScene);
+	//SceneQueue.push_Scene(&SceneQueue, image);
+	//pthread_mutex_unlock(&mutexScene);
 	return;
 }
 
@@ -1160,7 +1164,7 @@ iViewRC Setup () {
 
 
 	// because the license might take a while we sleep a bit here
-	iView_Sleep(5000);
+	iView_Sleep(2000);
 
 	iViewDeviceParameters deviceParameters;
 	deviceParameters.deviceType = IVIEWDEVICE_ETG_CAMERAPLAYBACK;
@@ -1589,11 +1593,11 @@ iViewRC Cleanup () {
 void WaitForUserInteraction () {
 
 	//start threads for each queue
-	pthread_t threadL, threadR, threadScene;
+	//pthread_t threadL, threadR, threadScene;
 	
-	pthread_create(&threadL, NULL, worker_EyeThreadL, NULL);
-	pthread_create(&threadR, NULL, worker_EyeThreadR, NULL);
-	pthread_create(&threadScene, NULL, worker_SceneThread, NULL);
+	//pthread_create(&threadL, NULL, worker_EyeThreadL, NULL);
+	//pthread_create(&threadR, NULL, worker_EyeThreadR, NULL);
+	//pthread_create(&threadScene, NULL, worker_SceneThread, NULL);
 
 
 	// Wait for data to arrive via callback
@@ -1615,9 +1619,9 @@ void WaitForUserInteraction () {
 
 	//end threads for each queue, done by setting flag
 	//TODO: test this works.
-	pthread_mutex_lock(&mutexFlag);
-	studyFlag = 0;
-	pthread_mutex_unlock(&mutexFlag);
+	//pthread_mutex_lock(&mutexFlag);
+	//studyFlag = 0;
+	//pthread_mutex_unlock(&mutexFlag);
 
 	return;
 }

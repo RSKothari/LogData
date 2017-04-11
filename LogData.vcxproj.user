@@ -4,4 +4,9 @@
     <LocalDebuggerCommandArguments> --show-scene --scene30 --show-eyes --show-gaze --samplingrate 120</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release2|Win32'">
+    <LocalDebuggerCommandArguments> --show-scene-with-gaze --scene30 --show-eyes --show-gaze --samplingrate 120</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerAttach>false</LocalDebuggerAttach>
+  </PropertyGroup>
 </Project>

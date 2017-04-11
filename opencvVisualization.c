@@ -40,6 +40,8 @@ char gRightEyeImageWindowDisplayed = 0;
 char gSceneImageWindowDisplayed = 0;
 static char autoScaleOnce = 1;
 
+int p[] = { CV_IMWRITE_JPEG_QUALITY ,50,0 };
+
 
 
 /* **************************************************************************************** */
@@ -186,7 +188,7 @@ void writeImage (iViewImage *image, int fr_num, string imLoc, vector<int> compre
 
 	string tempStr = imLoc + "\\" + to_string( static_cast<long double>(fr_num)) + ".jpg";
 	//bjohn: somehow this function gets crap input for the image pointer
-	cvSaveImage(tempStr.c_str(), image);
+	cvSaveImage(tempStr.c_str(), image,p);
 	return;
 }
 
